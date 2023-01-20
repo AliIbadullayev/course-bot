@@ -2,9 +2,10 @@
   (:require [morse.handlers :as handlers]
             [morse.polling :as polling]
             [codax.core :as codax]
-            [course-bot.report :as report])
+            [taoensso.tempura :as tempura])
   (:require [course-bot.misc :as misc]
             [course-bot.quiz :as quiz]
+            [course-bot.report :as report]
             [course-bot.presentation :as pres]
             [course-bot.general :as general]
             [course-bot.essay :as essay]
@@ -83,15 +84,21 @@
                     (println "Unknown message: " message)
                     (talk/send-text token id "Unknown message")))
 
-(defn run
-  "I don't do a whole lot ... yet."
-  [& args]
-  (println "Bot activated, my Lord!")
+(defn tr [& in]
+  (tempura/tr {:dict {:en {:bot {:start "Bot activated, my Lord!"
+                                 :restart "Restart bot"
+                                 :dot "."
+                                 :stop "Bot is dead, my Lord!"} :r1 "en/r1" :r2 "en/r2" :missing "en/?"}}}
+              [:ru :en]
+              (apply vector in)))
+
+(defn run [& args]
+  (println (tr :bot/start))
   (loop [channel (polling/start token bot-api)]
     (Thread/sleep 500)
-    (print ".") (flush)
+    (print (tr :bot/dot)) (flush)
     (if (.closed? channel)
-      (do (print "Restart bot")
+      (do (print (tr :bot/stop))
           (recur (polling/start token bot-api)))
       (recur channel)))
-  (println "Bot is dead, my Lord!"))
+  (println (tr :bot/stop)))

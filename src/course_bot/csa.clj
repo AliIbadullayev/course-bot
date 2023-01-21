@@ -1,15 +1,24 @@
 (ns course-bot.csa
   (:require [morse.handlers :as handlers]
             [morse.polling :as polling]
-            [codax.core :as codax]
-            [taoensso.tempura :as tempura])
+            [codax.core :as codax])
   (:require [course-bot.misc :as misc]
             [course-bot.quiz :as quiz]
             [course-bot.report :as report]
             [course-bot.presentation :as pres]
-            [course-bot.general :as general]
+            [course-bot.general :as general :refer [tr]]
             [course-bot.essay :as essay]
             [course-bot.talk :as talk]))
+
+(general/set-locales [:ru :en])
+(general/add-dict
+ {:en
+  {:csa
+   {:start "Bot activated, my Lord!"
+    :restart "Restart bot"
+    :dot "."
+    :stop "Bot is dead, my Lord!"
+    :unknown-_ "Unknown message: %s"}}})
 
 (def conf (misc/get-config "../edu-csa-internal"))
 
@@ -81,24 +90,17 @@
   (handlers/command "help" {{id :id} :chat} (talk/send-text (-> conf :token) id (talk/helps)))
 
   (handlers/message {{id :id} :chat :as message}
-                    (println "Unknown message: " message)
-                    (talk/send-text token id "Unknown message")))
-
-(defn tr [& in]
-  (tempura/tr {:dict {:en {:bot {:start "Bot activated, my Lord!"
-                                 :restart "Restart bot"
-                                 :dot "."
-                                 :stop "Bot is dead, my Lord!"} :r1 "en/r1" :r2 "en/r2" :missing "en/?"}}}
-              [:ru :en]
-              (apply vector in)))
+                    (let [err (format (tr :bot/unknown-_) message)]
+                      (println err)
+                      (talk/send-text token id err))))
 
 (defn run [& args]
-  (println (tr :bot/start))
+  (println (tr :csa/start))
   (loop [channel (polling/start token bot-api)]
     (Thread/sleep 500)
-    (print (tr :bot/dot)) (flush)
+    (print (tr :csa/dot)) (flush)
     (if (.closed? channel)
-      (do (print (tr :bot/stop))
+      (do (print (tr :csa/stop))
           (recur (polling/start token bot-api)))
       (recur channel)))
-  (println (tr :bot/stop)))
+  (println (tr :csa/stop)))
